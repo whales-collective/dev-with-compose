@@ -1,0 +1,23 @@
+services:
+  # Run unit tests
+  unit-tests:
+    extends:
+      file: ./01-unit-tests.yml
+      service: unit-tests
+
+  web-service:
+    extends:
+      file: ./02-start-the-application.yml
+      service: web-service
+        
+    depends_on:
+      unit-tests:
+        condition: service_completed_successfully
+
+  test-home-endpoint:
+    extends:
+      file: ./03-curl.yml
+      service: test-home-endpoint 
+    depends_on:
+      web-service:
+        condition: service_healthy

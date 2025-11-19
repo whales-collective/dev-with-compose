@@ -1,0 +1,10 @@
+services:
+
+
+  test-home-endpoint:
+    image: curlimages/curl:latest
+    command: >
+      curl --fail http://web-service:8080
+    depends_on:
+      web-service:
+        condition: service_healthy

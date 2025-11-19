@@ -1,0 +1,50 @@
+services:
+
+  # Run unit tests
+  unit-tests:
+    image: golang:1.25.2-alpine
+    working_dir: /project
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "🧪 Running unit tests"
+
+        go mod download
+        if go test -v > ./reports/test-output.txt; then
+          echo "✅ Tests completed"
+          echo "📄 Test report generated at ./reports/test-output.txt"
+          go test -cover > ./reports/test-coverage.txt
+          exit 0
+        else
+          echo "❌ Tests failed"
+          exit 1
+        fi
+
+    volumes:
+      - ./:/project
+
+  web-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 9090:8080
+    command: ["./hello"]
+    depends_on:
+      unit-tests:
+        condition: service_completed_successfully
+    healthcheck:
+        test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+        interval: 30s
+        timeout: 30s
+        retries: 5
+        start_period: 40s
+
+  test-home-endpoint:
+    image: curlimages/curl:latest
+    command: >
+      curl --fail http://web-service:8080
+    depends_on:
+      web-service:
+        condition: service_healthy
